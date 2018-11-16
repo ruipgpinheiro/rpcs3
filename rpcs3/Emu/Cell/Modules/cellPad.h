@@ -94,6 +94,6 @@ struct CellPadActParam
 	u8 reserved[6];
 };
 
-s32 cellPadGetData(u32 port_no, vm::ptr<CellPadData> data);
-s32 cellPadInit(u32 max_connect);
-s32 cellPadSetPortSetting(u32 port_no, u32 port_setting);
+error_code cellPadGetData(u32 port_no, vm::ptr<CellPadData> data);
+error_code cellPadInit(u32 max_connect);
+error_code cellPadSetPortSetting(u32 port_no, u32 port_setting);
