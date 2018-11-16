@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 
 
@@ -93,3 +93,7 @@ struct CellPadActParam
 	u8 motor[CELL_PAD_ACTUATOR_MAX];
 	u8 reserved[6];
 };
+
+s32 cellPadGetData(u32 port_no, vm::ptr<CellPadData> data);
+s32 cellPadInit(u32 max_connect);
+s32 cellPadSetPortSetting(u32 port_no, u32 port_setting);
