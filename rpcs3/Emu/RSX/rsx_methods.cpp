@@ -1144,6 +1144,7 @@ namespace rsx
 		{
 			static void impl(thread* rsx, u32 _reg, u32 arg)
 			{
+				rsx->reset();//TODO ugly vsh 0.85 hack, as vsh this low doesn't issue flip commands :|
 				sys_rsx_context_attribute(0x55555555, 0x102, index, arg, 0, 0);
 			}
 		};
