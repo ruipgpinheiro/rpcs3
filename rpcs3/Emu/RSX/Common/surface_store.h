@@ -128,7 +128,7 @@ namespace rsx
 				LOG_TODO(RSX, "Resource used before memory initialization");
 			}
 
-			return (memory_tag_sample == *vm::get_super_ptr<u64>(memory_tag_address));
+			return (memory_tag_sample == hash());
 		}
 
 		void queue_tag(u32 address)
@@ -138,7 +138,7 @@ namespace rsx
 
 		void sync_tag()
 		{
-			memory_tag_sample = *vm::get_super_ptr<u64>(memory_tag_address);
+			memory_tag_sample = hash();
 		}
 
 		void on_write(u64 write_tag = 0)
@@ -155,6 +155,23 @@ namespace rsx
 			read_aa_mode = write_aa_mode;
 			dirty = false;
 			old_contents = nullptr;
+		}
+
+	private:
+		u64 hash() const
+		{
+			const u32 size = get_surface_height() * get_rsx_pitch();
+			u64* ptr = reinterpret_cast<u64*>(vm::get_super_ptr<u64>(memory_tag_address));
+			const u64* end = ptr + size;
+			u64 result = *(ptr++);
+
+			ASSERT(size % sizeof(u64) == 0); // TODO: Can this fail?
+			while(ptr < end)
+			{
+				result ^= *(ptr++);
+			}
+
+			return result;
 		}
 	};
 
