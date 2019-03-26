@@ -312,9 +312,9 @@ error_code cellPadGetData(u32 port_no, vm::ptr<CellPadData> data)
 	// only update parts of the output struct depending on the controller setting
 	if (data->len > CELL_PAD_LEN_NO_CHANGE)
 	{
-		data->button[0] = 0x0; // always 0
+		//data->button[0] = 0x0; // always 0
 		// bits 15-8 reserved, 7-4 = 0x7, 3-0: data->len/2;
-		data->button[1] = (0x7 << 4) | std::min(data->len / 2, 15);
+		data->button[0] = (0x7 << 4) | std::min(data->len / 2, 15);
 
 		data->button[CELL_PAD_BTN_OFFSET_DIGITAL1] = pad->m_digital_1;
 		data->button[CELL_PAD_BTN_OFFSET_DIGITAL2] = pad->m_digital_2;
@@ -913,7 +913,7 @@ s32 sys_io_3733EA3C(u32 port_no, vm::ptr<u32> device_type, vm::ptr<CellPadData> 
 
 void cellPad_init()
 {
-	REG_FUNC(sys_io, cellPadInit);
+	/*REG_FUNC(sys_io, cellPadInit);
 	REG_FUNC(sys_io, cellPadEnd);
 	REG_FUNC(sys_io, cellPadClearBuf);
 	REG_FUNC(sys_io, cellPadGetData);
@@ -935,5 +935,6 @@ void cellPad_init()
 	REG_FUNC(sys_io, cellPadLddGetPortNo);
 	REG_FUNC(sys_io, cellPadLddUnregisterController);
 
-	REG_FNID(sys_io, 0x3733EA3C, sys_io_3733EA3C);
+	REG_FNID(sys_io, 0x3733EA3C, sys_io_3733EA3C);*/
+	sys_io.enabled = logs::level::trace;
 }
