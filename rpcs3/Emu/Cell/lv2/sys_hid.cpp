@@ -21,8 +21,9 @@ error_code sys_hid_manager_open(u64 device_type, u64 port_no, vm::ptr<u32> handl
 		return CELL_EINVAL;
 	}
 
-	// 'handle' might actually be some sort of port number, but may not actually matter for the time being
-	static u32 ctr = 0x13370000;
+	// 'handle' starts at 0x100 in realhw, and increments every time sys_hid_manager_open is called
+	// however, sometimes the handle is reused when opening sys_hid_manager again (even when the previous one hasn't been closed yet) - maybe when processes/threads get killed/finish they also release their handles?
+	static u32 ctr = 0x100;
 	*handle = ctr++;
 
 	//const auto handler = fxm::import<pad_thread>(Emu.GetCallbacks().get_pad_handler);
@@ -34,6 +35,28 @@ error_code sys_hid_manager_open(u64 device_type, u64 port_no, vm::ptr<u32> handl
 
 error_code sys_hid_manager_ioctl(u32 hid_handle, u32 pkg_id, vm::ptr<void> buf, u64 buf_size) {
 	sys_hid.todo("sys_hid_manager_ioctl(hid_handle=0x%x, pkg_id=0x%llx, buf=*0x%x, buf_size=0x%llx)", hid_handle, pkg_id, buf, buf_size);
+
+	// From realhw syscall dump when vsh boots
+	// SC count | handle | pkg_id | *buf (in)                                                                 | *buf (out)                                                                | size -> ret
+	// ---------|--------|--------|---------------------------------------------------------------------------|---------------------------------------------------------------------------|------------
+	//    28893 |  0x101 |    0x2 | 000000000000000000000000000000000000000000                                | 054c02680102020000000000000008035000001c1f                                |   21 -> 0
+	//    28894 |  0x101 |    0x3 | 00000000                                                                  | 00000000                                                                  |    4 -> 0
+	//    28895 |  0x101 |    0x5 | 00000000                                                                  | 00000000                                                                  |    4 -> 0
+	//    28896 |  0x101 |   0x68 | 01000000d0031cb020169e502006b7f80000000000606098000000000000000000000000d | 01000000d0031cb020169e502006b7f80000000000606098000000000000000000000000d |   64 -> 0
+	//          |        |        | 0031c90000000002006bac400000000d0031cb0000000002006b4d0                   | 0031c90000000002006bac400000000d0031cb0000000002006b4d0                   |
+	//    28898 |  0x102 |    0x2 | 000000000000000000000000000000000000000000                                | 054c02680102020000000000000008035000001c1f                                |   21 -> 0
+	//    28901 |  0x100 |   0x64 | 00000001                                                                  | 00000001                                                                  |    4 -> 0xffffffff80010002  # x3::hidportassign
+	//    2890  |  0x100 |   0x65 | 6b49d200                                                                  | 6b49d200                                                                  |    4 -> 0xffffffff80010002  # x3::hidportassign
+	//    28903 |  0x100 |   0x66 | 00000001                                                                  | 00000001                                                                  |    4 -> 0  # x3::hidportassign
+	//    28904 |  0x100 |    0x0 | 00000001000000ff000000ff000000ff000000ff000000010000000100000001000000010 | 00000001000000ff000000ff000000ff000000ff000000010000000100000001000000010 |   68 -> 0  # x3::hidportassign
+	//          |        |        | 000000000000000000000000000000000000001000000010000000100000001           | 000000000000000000000000000000000000001000000010000000100000001           |
+	//    28907 |  0x101 |    0x3 | 00000001                                                                  | 00000001                                                                  |    4 -> 0
+	//    28908 |  0x101 |    0x5 | 00000001                                                                  | 00000001                                                                  |    4 -> 0
+	//    29404 |  0x100 |    0x4 | 00                                                                        | ee                                                                        |    1 -> 0
+	// *** repeats 30600, 31838, 33034, 34233, 35075 (35075 is x3::hidportassign) ***
+	//    35076 |  0x100 |    0x0 | 00000001000000ff000000ff000000ff000000ff000000320000003200000032000000320 | 00000001000000ff000000ff000000ff000000ff000000320000003200000032000000320 |   68 -> 0
+	//          |        |        | 000003200000032000000320000003200002710000027100000271000002710           | 000003200000032000000320000003200002710000027100000271000002710           |
+	// *** more 0x4 that have buf(in)=00 and buf(out)=ee ***
 
 	if (pkg_id == 5)
 	{
@@ -70,6 +93,13 @@ error_code sys_hid_manager_check_focus()
 	return not_an_error(1);
 }
 
+error_code sys_hid_manager_513(u64 a1, u64 a2, vm::ptr<void> buf, u64 buf_size)
+{
+	sys_hid.todo("sys_hid_manager_513(%llx, %llx, buf=%llx, buf_size=%llx)", a1, a2, buf, buf_size);
+
+	return CELL_OK;
+}
+
 error_code sys_hid_manager_514(u32 pkg_id, vm::ptr<void> buf, u64 buf_size)
 {
 	if (pkg_id == 0xE)
@@ -84,14 +114,16 @@ error_code sys_hid_manager_514(u32 pkg_id, vm::ptr<void> buf, u64 buf_size)
 	if (pkg_id == 0xE)
 	{
 		// buf holds device_type
-		//auto device_type = vm::static_ptr_cast<u8>(buf);
+		auto device_type = vm::static_ptr_cast<u8>(buf);
+		sys_hid.todo("device_type: 0x%x", device_type[0]);
 
 		// return 1 or 0? look like almost like another check_focus type check, returning 0 looks to keep system focus
-
 	}
-	else if (pkg_id == 0xd)
+	else if (pkg_id == 0xD)
 	{
 		auto inf = vm::static_ptr_cast<sys_hid_manager_514_pkg_d>(buf);
+		// unk1 = (pad# << 24) | pad# | 0x100
+		// return value doesn't seem to be used again
 		sys_hid.todo("unk1: 0x%x, unk2:0x%x", inf->unk1, inf->unk2);
 	}
 
@@ -135,12 +167,20 @@ error_code sys_hid_manager_read(u32 handle, u32 pkg_id, vm::ptr<void> buf, u64 b
 		}
 	}
 	else if (pkg_id == 0x81) {
+
+		// From realhw syscall dump when vsh boots
+		// SC count | handle | pkg_id | *buf (out)                                                                                                                                  | size -> ret
+		// ---------|--------|--------|---------------------------------------------------------------------------------------------------------------------------------------------|-------------
+		//    28909 |  0x101 |   0x81 | 0000007c00000000008000800080008000000000000000000000000000000000000000000000000002000200020002000000000000000000000000000000000000000000... |  128 -> 0x30
+		//    28932 |  0x101 |   0x81 | 0000007c0000000000810082007e007d000000000000000000000000000000000000000000000000021101b2024d02000000000000000000000000000000000000000000... |  128 -> 0x30
+		//    28953 |  0x101 |   0x81 | 0000007c0000000000810082007e007d000000000000000000000000000000000000000000000000021101b1024c02000000000000000000000000000000000000000000... |  128 -> 0x30
+
 		// cellPadGetDataExtra?
 		vm::var<CellPadData> tmpData;
 		cellPadGetData(0, tmpData);
-		u64 cpySize = std::min((u64)tmpData->len * 2, buf_size);
+		u64 cpySize = std::min((u64)tmpData->len * 2, buf_size * 2);
 		memcpy(buf.get_ptr(), &tmpData->button, cpySize);
-		return not_an_error(cpySize / 2);
+		return not_an_error(cpySize);
 	}
 	else if (pkg_id == 0xFF) {
 
