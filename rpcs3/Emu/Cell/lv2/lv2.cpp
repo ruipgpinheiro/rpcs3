@@ -495,19 +495,19 @@ const std::array<ppu_function_t, 1024> s_ppu_syscall_table
 	BIND_FUNC(sys_hid_manager_check_focus),                 //510 (0x1FE)
 	null_func,//BIND_FUNC(sys_hid_manager_set_master_process) //511 (0x1FF)  ROOT
 	BIND_FUNC(sys_hid_manager_is_process_permission_root),  //512 (0x200)  ROOT
-	null_func,//BIND_FUNC(sys_hid_manager_...)              //513 (0x201)
+	BIND_FUNC(sys_hid_manager_513),                         //513 (0x201)
 	BIND_FUNC(sys_hid_manager_514),                         //514 (0x202)
 	uns_func,                                               //515 (0x203)  UNS
 	BIND_FUNC(sys_config_open),                             //516 (0x204)
 	BIND_FUNC(sys_config_close),                            //517 (0x205)
 	BIND_FUNC(sys_config_get_service_event),                //518 (0x206)
 	BIND_FUNC(sys_config_add_service_listener),             //519 (0x207)
-	null_func,//BIND_FUNC(sys_config_remove_service_listener) //520 (0x208)
+	BIND_FUNC(sys_config_remove_service_listener),          //520 (0x208)
 	BIND_FUNC(sys_config_register_service),                 //521 (0x209)
-	null_func,//BIND_FUNC(sys_config_unregister_service)    //522 (0x20A)
-	null_func,//BIND_FUNC(sys_config_io_event)              //523 (0x20B)
-	null_func,//BIND_FUNC(sys_config_register_io_error_listener) //524 (0x20C)
-	null_func,//BIND_FUNC(sys_config_unregister_io_error_listener) //525 (0x20D)
+	BIND_FUNC(sys_config_unregister_service),               //522 (0x20A)
+	BIND_FUNC(sys_config_get_io_event),                     //523 (0x20B)
+	BIND_FUNC(sys_config_register_io_error_listener),       //524 (0x20C)
+	BIND_FUNC(sys_config_unregister_io_error_listener),     //525 (0x20D)
 	uns_func, uns_func, uns_func, uns_func,                 //526-529  UNS
 	BIND_FUNC(sys_usbd_initialize),                         //530 (0x212)
 	BIND_FUNC(sys_usbd_finalize),                           //531 (0x213)
