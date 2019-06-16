@@ -50,7 +50,7 @@ namespace utils
 
 	bool dynamic_library::loaded() const
 	{
-		return !m_handle;
+		return m_handle != nullptr;
 	}
 
 	dynamic_library::operator bool() const
@@ -61,7 +61,12 @@ namespace utils
 	void* get_proc_address(const char* lib, const char* name)
 	{
 #ifdef _WIN32
-		return reinterpret_cast<void*>(GetProcAddress(GetModuleHandleA(lib), name));
+		auto m_handle = GetModuleHandleA(lib);
+		if (!m_handle)
+			return nullptr;
+
+		auto proc_addr = GetProcAddress(m_handle, name);
+		return reinterpret_cast<void*>(proc_addr);
 #else
 		return dlsym(dlopen(lib, RTLD_NOLOAD), name);
 #endif

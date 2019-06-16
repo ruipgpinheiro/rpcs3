@@ -1,4 +1,5 @@
 #include <string>
+#include "Log.h"
 
 namespace utils
 {
@@ -52,9 +53,14 @@ namespace utils
 	struct dynamic_import<R(Args...)>
 	{
 		R(*ptr)(Args...);
+
 		const char* const lib;
 		const char* const name;
 
+	private:
+		bool initialized = false;
+
+	public:
 		// Constant initialization
 		constexpr dynamic_import(const char* lib, const char* name)
 			: ptr(nullptr)
@@ -65,10 +71,17 @@ namespace utils
 
 		void init()
 		{
-			if (!ptr)
+			if (!initialized)
 			{
 				// TODO: atomic
 				ptr = reinterpret_cast<R(*)(Args...)>(get_proc_address(lib, name));
+
+				if (!ptr)
+				{
+					LOG_WARNING(GENERAL, "Could not find dynamic import '%s' in '%s'.", name, lib);
+				}
+
+				initialized = true;
 			}
 		}
 
