@@ -460,12 +460,16 @@ namespace rsx
 		{
 			const u64 start_time = get_system_time();
 
+			const u64  vblank_frequency        = 120;
+			const u64  vblank_period_us        = 1'000'000 / vblank_frequency;
+			const auto vblank_period_us_chrono = std::chrono::microseconds(vblank_period_us - 600);
+
 			vblank_count = 0;
 
 			// TODO: exit condition
 			while (!Emu.IsStopped() && !m_rsx_thread_exiting)
 			{
-				if (get_system_time() - start_time > vblank_count * 1000000 / 60)
+				if (get_system_time() - start_time > vblank_count * vblank_period_us)
 				{
 					vblank_count++;
 					sys_rsx_context_attribute(0x55555555, 0xFED, 1, 0, 0, 0);
@@ -481,12 +485,12 @@ namespace rsx
 						thread_ctrl::notify(*intr_thread);
 					}
 
-					std::this_thread::sleep_for(16ms);
+					std::this_thread::sleep_for(vblank_period_us_chrono);
 					continue;
 				}
 
 				while (Emu.IsPaused() && !m_rsx_thread_exiting)
-					std::this_thread::sleep_for(16ms);
+					std::this_thread::sleep_for(vblank_period_us_chrono);
 
 				thread_ctrl::wait_for(100); // Hack
 			}
